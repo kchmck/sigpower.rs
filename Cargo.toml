@@ -1,0 +1,8 @@
+[package]
+name = "sigpower"
+version = "1.0.0"
+authors = ["Mick Koch <mick@kochm.co>"]
+
+[dependencies]
+num = "0.1.30"
+ewma = {version = "1.0.0", path = "../ewma"}
