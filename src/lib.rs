@@ -1,4 +1,3 @@
-extern crate ewma;
 extern crate num;
 
 pub mod power;

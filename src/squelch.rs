@@ -1,5 +1,6 @@
 use smeter::SignalLevel;
-use ewma::{MovingAverage, MovingAverageWeight};
+
+const TIMER_STOP: u32 = 20;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum SquelchThreshold {
@@ -7,22 +8,16 @@ pub enum SquelchThreshold {
     Level(u32),
 }
 
-struct SquelchWeight;
-
-impl MovingAverageWeight for SquelchWeight {
-    fn weight() -> f32 { 0.15 }
-}
-
 pub struct Squelch {
     threshold: SquelchThreshold,
-    avg: MovingAverage<SquelchWeight>,
+    timer: u32,
 }
 
 impl Squelch {
     pub fn new(threshold: SquelchThreshold) -> Squelch {
         Squelch {
             threshold: threshold,
-            avg: MovingAverage::new(-117.0),
+            timer: 0,
         }
     }
 
@@ -30,20 +25,26 @@ impl Squelch {
         self.threshold = threshold;
     }
 
-    pub fn is_squelched(&mut self, power: f32) -> bool {
+    pub fn is_squelched(&mut self, level: SignalLevel) -> bool {
         use self::SquelchThreshold::*;
 
-        if power > self.avg.get() {
-            self.avg.set(power);
-        }
+        let above = match self.threshold {
+            Open => true,
+            Level(thresh) => match level {
+                SignalLevel::Plus(_) => true,
+                SignalLevel::Level(s) => s >= thresh,
+                SignalLevel::None => false,
+            },
+        };
 
-        match self.threshold {
-            Open => false,
-            Level(thresh) => match SignalLevel::from_dbm(self.avg.add(power)) {
-                SignalLevel::Plus(_) => false,
-                SignalLevel::Level(s) => s < thresh,
-                SignalLevel::None => true,
-            }
+        if above {
+            self.timer = 0;
+            false
+        } else if self.timer < TIMER_STOP {
+            self.timer += 1;
+            false
+        } else {
+            true
         }
     }
 }
