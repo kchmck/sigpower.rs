@@ -10,6 +10,7 @@ pub fn power_dbm(samples: &[Complex32], resistance: f32) -> f32 {
     // Power in Watts.
     let power = avg / resistance;
 
+    // Convert Watts to dBm.
     30.0 + 10.0 * power.log10()
 }
 
